@@ -20,11 +20,16 @@ git clone https://github.com/yourusername/audiobook-generator.git
 cd audiobook-generator
 ```
 
-2. Install the required dependencies:
+2. Create a virtual environment and install the dependencies:
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
 pip install -r requirements.txt
+python setup.py install
 ```
+
 
 3. Set up the necessary environment variables:
 

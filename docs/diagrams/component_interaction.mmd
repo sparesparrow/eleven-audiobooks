@@ -1,0 +1,18 @@
+%%{init: {'theme': 'forest'}}%%
+sequenceDiagram
+    participant M as Main
+    participant PDF as PDFProcessor
+    participant T as TranslationPipeline
+    participant O as BatchTextOptimizer
+    participant A as AudioGenerator
+    participant S as StorageEngine
+
+    M->>PDF: process(pdf_path)
+    PDF->>S: store_original(chunks)
+    M->>T: translate(chunks)
+    T->>S: store_translated(chunks)
+    M->>O: optimize_chapter(chunk)
+    O->>S: store_optimized(path)
+    M->>A: generate_chapter(path)
+    A->>S: store_audio(response)
+    S-->>M: get_audiobook_url()

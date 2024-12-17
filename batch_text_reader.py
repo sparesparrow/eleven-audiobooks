@@ -1,11 +1,16 @@
 import json
 import logging
-from typing import List
+from dataclasses import dataclass
+from typing import List, Optional
 
 import httpx
 from anthropic import Anthropic
 
-from batch_text_optimizer import BatchResult
+@dataclass
+class BatchResult:
+    custom_id: str
+    content: str
+    error: Optional[str] = None
 
 class BatchTextReader:
     def __init__(self, client: Anthropic):

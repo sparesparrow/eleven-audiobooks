@@ -1,8 +1,6 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from main import process_book
-
 class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch('main.PDFProcessor')
     @patch('main.TranslationPipeline')

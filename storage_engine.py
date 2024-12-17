@@ -16,8 +16,12 @@ class StorageEngine:
     def store_translated(self, chunks):
         self.translated_collection.insert_many([{"text": chunk} for chunk in chunks])
 
-    def store_audio(self, audio_data):
-        audio_id = self.audio_collection.insert_one(audio_data).inserted_id
+    def store_audio(self, audio_data, filename=None):
+        """Store audio data in MongoDB with optional filename."""
+        data = {"audio": audio_data}
+        if filename:
+            data["filename"] = filename
+        audio_id = self.audio_collection.insert_one(data).inserted_id
         return str(audio_id)
 
     def get_audiobook_url(self, audio_id):

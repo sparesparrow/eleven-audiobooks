@@ -1,0 +1,45 @@
+%%{init: {'theme': 'forest'}}%%
+graph TB
+    subgraph Input
+        PDF[PDF Book]
+    end
+    
+    subgraph Processing
+        PDFProc[PDF Processor]
+        Trans[Translation Pipeline]
+        Opt[Text Optimizer]
+        Audio[Audio Generator]
+    end
+    
+    subgraph Storage
+        MongoDB[(MongoDB)]
+    end
+    
+    subgraph APIs
+        Anthropic[Anthropic API]
+        ElevenLabs[ElevenLabs API]
+        DeepL[Translation APIs]
+    end
+
+    PDF --> PDFProc
+    PDFProc --> Trans
+    Trans --> Opt
+    Opt --> Audio
+    
+    Opt -.-> Anthropic
+    Audio -.-> ElevenLabs
+    Trans -.-> DeepL
+    
+    PDFProc --> MongoDB
+    Trans --> MongoDB
+    Audio --> MongoDB
+
+    style PDF fill:#d4e6b5
+    style PDFProc fill:#8cc084
+    style Trans fill:#8cc084
+    style Opt fill:#8cc084
+    style Audio fill:#8cc084
+    style MongoDB fill:#3d8361
+    style Anthropic fill:#a1c181
+    style ElevenLabs fill:#a1c181
+    style DeepL fill:#a1c181

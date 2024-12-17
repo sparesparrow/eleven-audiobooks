@@ -1,0 +1,67 @@
+%%{init: {'theme': 'forest'}}%%
+flowchart LR
+    subgraph Input
+        PDF[PDF Book]
+    end
+    
+    subgraph PDFProcessing
+        Extract[PyPDF2 Extraction]
+        Clean[Text Cleaning]
+        ChapterSplit[Chapter Detection]
+        LineSplit[Line Processing]
+    end
+    
+    subgraph Processing
+        Trans[Translation]
+        Opt[Line Optimization]
+        Merge[Merge Lines]
+        Audio[Audio Generation]
+    end
+    
+    subgraph Storage
+        ChapterDB[Chapter Files]
+        LineDB[Line Files]
+        Translated[Translated Text]
+        Optimized[Optimized Text]
+        AudioFiles[Audio Files]
+        
+        subgraph Metadata
+            PageRefs[Page References]
+            ChapterMeta[Chapter Metadata]
+        end
+    end
+
+    PDF --> Extract
+    Extract --> Clean
+    Clean --> ChapterSplit
+    ChapterSplit --> LineSplit
+    
+    ChapterSplit --> ChapterDB
+    ChapterSplit --> ChapterMeta
+    Extract --> PageRefs
+    LineSplit --> LineDB
+    
+    LineDB --> Trans
+    Trans --> Translated
+    Translated --> Opt
+    Opt --> Optimized
+    Optimized --> Merge
+    Merge --> Audio
+    Audio --> AudioFiles
+
+    style PDF fill:#d4e6b5
+    style Extract fill:#8cc084
+    style Clean fill:#8cc084
+    style ChapterSplit fill:#8cc084
+    style LineSplit fill:#8cc084
+    style Trans fill:#8cc084
+    style Opt fill:#8cc084
+    style Merge fill:#8cc084
+    style Audio fill:#8cc084
+    style ChapterDB fill:#3d8361
+    style LineDB fill:#3d8361
+    style Translated fill:#3d8361
+    style Optimized fill:#3d8361
+    style AudioFiles fill:#3d8361
+    style PageRefs fill:#3d8361
+    style ChapterMeta fill:#3d8361

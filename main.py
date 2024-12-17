@@ -39,10 +39,12 @@ class AudiobookProcessor:
         self.translation_pipeline = TranslationPipeline()
         self.text_optimizer = BatchTextOptimizer()
         self.audio_generator = AudioGenerator()
-
-    async def process_book(self) -> str:
+    async def process_book(self, translate: bool = False) -> str:
         """
         Main processing pipeline for converting PDF to audiobook
+        
+        Args:
+            translate: Whether to translate the text or not
         
         Returns:
             URL or path to the generated audiobook
@@ -53,10 +55,13 @@ class AudiobookProcessor:
             self.storage_engine.store_original(original_chunks)
             logger.info(f"Stored {len(original_chunks)} original text chunks")
 
-            # 2. Translation: Translate chunks
-            translated_chunks = await self.translation_pipeline.translate(original_chunks)
-            self.storage_engine.store_translated(translated_chunks)
-            logger.info(f"Stored {len(translated_chunks)} translated text chunks")
+            # 2. Translation: Translate chunks if required
+            if translate:
+                translated_chunks = await self.translation_pipeline.translate(original_chunks)
+                self.storage_engine.store_translated(translated_chunks)
+                logger.info(f"Stored {len(translated_chunks)} translated text chunks")
+            else:
+                translated_chunks = original_chunks
 
             # 3. Optimization: Enhance text for speech
             optimized_chunks = []

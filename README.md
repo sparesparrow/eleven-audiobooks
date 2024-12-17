@@ -41,7 +41,7 @@ export DEEPL_API_KEY=your_deepl_api_key
 To generate an audiobook from a PDF file:
 
 ```bash
-python main.py path/to/your/book.pdf
+python main.py data/LidskeJednani.pdf
 ```
 
 The application will:

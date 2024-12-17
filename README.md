@@ -16,8 +16,8 @@ The Audiobook Generator is a Python application that automates the process of co
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/audiobook-generator.git
-cd audiobook-generator
+git clone https://github.com/sparesparrow/eleven-audiobooks.git
+cd eleven-audiobooks
 ```
 
 2. Create a virtual environment and install the dependencies:

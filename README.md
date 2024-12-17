@@ -5,9 +5,9 @@ The Audiobook Generator is a Python application that automates the process of co
 ## Features
 
 - Extracts text from a PDF book and splits it into chapters
-- Translates the text from English to Czech using the DeepL API
-- Optimizes the translated text for speech synthesis using the Anthropic API
-- Generates audio files for each chapter using the ElevenLabs API
+- Translates the text from English to Czech using multiple translation services
+- Optimizes the translated text for speech synthesis using Anthropic's API
+- Generates audio files with word-level timing information using ElevenLabs API
 - Stores the original, translated, and optimized text, as well as the generated audio files
 - Provides a URL to access the generated audiobook
 
@@ -24,12 +24,9 @@ cd audiobook-generator
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -e .
-pip install -r requirements.txt
-python setup.py install
 ```
-
 
 3. Set up the necessary environment variables:
 
@@ -41,21 +38,36 @@ export DEEPL_API_KEY=your_deepl_api_key
 
 ## Usage
 
-To generate an audiobook from a PDF file, run the following command:
+To generate an audiobook from a PDF file:
 
 ```bash
 python main.py path/to/your/book.pdf
 ```
 
-The application will process the PDF, translate the content, optimize the text, generate audio files, and provide a URL to access the audiobook.
+The application will:
+1. Process the PDF and extract text
+2. Split into chapters using configurable markers
+3. Translate content if needed
+4. Optimize text for speech synthesis
+5. Generate audio with timing information
+6. Provide a URL to access the audiobook
 
 ## Testing
 
-To run the unit tests, use the following command:
+To run the unit tests:
 
 ```bash
-python -m unittest discover tests/
+python -m pytest tests/
 ```
+
+## Project Structure
+
+- `pdf_processor.py`: Handles PDF text extraction and chapter splitting
+- `translation_pipeline.py`: Manages text translation through multiple services
+- `batch_text_optimizer.py`: Optimizes text for speech synthesis
+- `audio_generator.py`: Generates audio with timing information
+- `storage_engine.py`: Handles data persistence
+- `main.py`: Main application entry point
 
 ## Contributing
 

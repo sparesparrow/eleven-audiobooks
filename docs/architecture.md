@@ -141,6 +141,7 @@ The Eleven Audiobooks system is designed to convert large PDF books into high-qu
 5. **Audio Generation**: 
    - Creates audio files using ElevenLabs' text-to-speech service
    - Maintains consistent voice across merged content
+   - Captures word timing information for synchronization
 6. **Storage and Data Model**: 
    - Uses Chapter dataclass to store metadata (number, title, content, page range)
    - Persists all intermediate results (chapters, lines, translations)

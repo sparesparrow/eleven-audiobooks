@@ -1,66 +1,204 @@
-import typing
+import argparse
+import os
+import shutil
+import sys
+import subprocess
+import requests
+import json
+import time
 from pathlib import Path
-from elevenlabs import ElevenLabs, VoiceSettings
-from storage_engine import StorageEngine
 
-class AudioGenerator:
-    def __init__(self, api_key: str, voice_id: str, voice_settings: typing.Optional[VoiceSettings] = None, mongo_uri: str = "mongodb://localhost:27017"):
-        self.client = ElevenLabs(api_key=api_key)
-        self.voice_id = voice_id
-        self.voice_settings = voice_settings or VoiceSettings()
-        self.storage_engine = StorageEngine(mongo_uri=mongo_uri)
+try:
+    import pyperclip
+except ImportError:
+    pyperclip = None
 
-    def generate(self, text: str, previous_request_ids: typing.Optional[typing.Sequence[str]] = None) -> str:
-        """
-        Generates audio from the given text using the ElevenLabs API.
+# Configuration
+VOICE_ID = "OJtLHqR5g0hxcgc27j7C"
+OUTPUT_DIR = Path.home() / "assistant" / "audio"
+MODEL_ID = "eleven_multilingual_v2"
+API_URL = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
 
-        Args:
-            text (str): The text to generate audio from.
-            previous_request_ids (typing.Optional[typing.Sequence[str]]): Request IDs of previous audio generations for context.
+def show_usage():
+    usage = """
+Usage: python elevenlabs_text_to_speech.py [OPTIONS] [TEXT]
 
-        Returns:
-            str: The file path of the generated audio.
-        """
-        response = self.client.text_to_speech.convert_as_stream(
-            voice_id=self.voice_id,
-            text=text,
-            voice_settings=self.voice_settings,
-            previous_request_ids=previous_request_ids,
-        )
+Options:
+  -p, --play         Play the audio file immediately after generation
+  -f, --file FILE    Read text from specified file
+  -c, --clipboard    Use the text from the clipboard
+  -h, --help         Show this help message
+  -d, --debug        Enable debug output
 
-        audio_path = self.storage_engine.store_audio(response)
-        return audio_path
+Input methods:
+  1. Direct text input as argument
+  2. Specified file with -f option
+  3. TextToSpeech.md file (default if no other input provided)
+  4. Standard input (pipe or redirect)
+  5. Clipboard with -c option
+"""
+    print(usage)
 
-    def generate_chapter(self, chapter_input: typing.Union[str, Path], chapter_index: int = None, previous_request_ids: typing.Optional[typing.Sequence[str]] = None) -> typing.Tuple[str, str]:
-        """
-        Generates audio for a specific chapter.
+def check_dependencies(debug=False):
+    required_commands = ["mpv"]
+    missing_deps = []
+    for cmd in required_commands:
+        if not shutil.which(cmd):
+            missing_deps.append(cmd)
+    if missing_deps:
+        print(f"Error: Missing required dependencies: {' '.join(missing_deps)}")
+        print("Please install them using your package manager.")
+        sys.exit(1)
+    if debug:
+        print("All dependencies are satisfied.")
 
-        Args:
-            chapter_input (Union[str, Path]): The text or file path of the chapter.
-            chapter_index (Optional[int]): The index of the chapter for filename generation.
-            previous_request_ids (typing.Optional[typing.Sequence[str]]): Request IDs of previous audio generations for context.
+def create_output_dir():
+    try:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        print(f"Error: Failed to create output directory: {OUTPUT_DIR}")
+        sys.exit(1)
 
-        Returns:
-            typing.Tuple[str, str]: A tuple containing the file path of the generated audio and the request ID.
-        """
-        # If input is a file path, read its contents
-        if isinstance(chapter_input, Path):
-            with open(chapter_input, 'r', encoding='utf-8') as f:
-                chapter_text = f.read()
-        else:
-            chapter_text = chapter_input
-        # Converts text into speech using a voice of your choice and returns JSON containing audio as a base64 encoded string together with information on when which character was spoken.
-        response = self.client.text_to_speech.convert_with_timestamps(
-            voice_id=self.voice_id,
-            text=chapter_text,
-            voice_settings=self.voice_settings,
-            previous_request_ids=previous_request_ids,
-        )
+def get_text_content(args):
+    text_content = ""
+    if args.clipboard:
+        if not pyperclip:
+            print("Error: pyperclip module not installed. Install it using 'pip install pyperclip'.")
+            sys.exit(1)
+        try:
+            text_content = pyperclip.paste()
+        except Exception as e:
+            print("Error: Failed to read from clipboard.")
+            sys.exit(1)
+    elif args.file:
+        try:
+            with open(args.file, 'r', encoding='utf-8') as f:
+                text_content = f.read()
+        except Exception as e:
+            print(f"Error: Failed to read file {args.file}")
+            sys.exit(1)
+    elif not sys.stdin.isatty():
+        text_content = sys.stdin.read()
+    elif Path("TextToSpeech.md").is_file():
+        try:
+            with open("TextToSpeech.md", 'r', encoding='utf-8') as f:
+                text_content = f.read()
+        except Exception as e:
+            print("Error: Failed to read TextToSpeech.md")
+            sys.exit(1)
+    elif args.text:
+        text_content = args.text
+    else:
+        print("Error: No input text provided")
+        show_usage()
+        sys.exit(1)
 
-        request_id = response.headers["request-id"]
-        
-        # Generate filename if chapter_index is provided
-        filename = f"chapter_{chapter_index}.mp3" if chapter_index is not None else None
-        audio_path = self.storage_engine.store_audio(response, filename=filename)
-        
-        return audio_path, request_id
+    if not text_content.strip():
+        print("Error: Input text is empty")
+        sys.exit(1)
+
+    return text_content
+
+def generate_speech(text_content, debug=False):
+    headers = {
+        "Accept": "audio/mpeg",
+        "xi-api-key": os.getenv("ELEVENLABS_API_KEY", ""),
+        "Content-Type": "application/json"
+    }
+
+    if not headers["xi-api-key"]:
+        print("Error: ELEVENLABS_API_KEY environment variable is not set or is empty")
+        sys.exit(1)
+
+    payload = {
+        "text": text_content,
+        "model_id": MODEL_ID,
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.75
+        }
+    }
+
+    if debug:
+        print("Debug: Request JSON:")
+        print(json.dumps(payload, indent=4))
+        print("Debug: Making API call to ElevenLabs...")
+
+    try:
+        response = requests.post(API_URL, headers=headers, data=json.dumps(payload))
+        if debug:
+            print(f"Debug: HTTP Response Code: {response.status_code}")
+        if response.status_code != 200:
+            print(f"Error: API request failed with HTTP code {response.status_code}")
+            try:
+                error_content = response.json()
+                print("Error response:")
+                print(json.dumps(error_content, indent=4))
+            except:
+                print(response.text)
+            return None
+        return response.content
+    except Exception as e:
+        print(f"Error: Failed to make API request: {e}")
+        return None
+
+def save_audio(content):
+    timestamp = int(time.time())
+    output_file = OUTPUT_DIR / f"{timestamp}_speech.mp3"
+    try:
+        with open(output_file, 'wb') as f:
+            f.write(content)
+        return output_file
+    except Exception as e:
+        print(f"Error: Failed to save audio file: {e}")
+        return None
+
+def play_audio(file_path):
+    try:
+        subprocess.run(["mpv", str(file_path)], check=True)
+    except Exception as e:
+        print("Error: Failed to play audio file")
+        sys.exit(1)
+
+def main():
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('text', nargs='?', help='Direct text input as argument')
+    parser.add_argument('-p', '--play', action='store_true', help='Play the audio file immediately after generation')
+    parser.add_argument('-f', '--file', help='Read text from specified file')
+    parser.add_argument('-c', '--clipboard', action='store_true', help='Use the text from the clipboard')
+    parser.add_argument('-h', '--help', action='store_true', help='Show this help message')
+    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug output')
+
+    args = parser.parse_args()
+
+    if args.help:
+        show_usage()
+        sys.exit(0)
+
+    check_dependencies(debug=args.debug)
+    create_output_dir()
+
+    text_content = get_text_content(args)
+
+    if args.debug:
+        print("Debug: Input text content:")
+        print(text_content)
+
+    audio_content = generate_speech(text_content, debug=args.debug)
+    if not audio_content:
+        print("Error: Speech generation failed")
+        sys.exit(1)
+
+    output_file = save_audio(audio_content)
+    if not output_file:
+        print("Error: Failed to save audio file")
+        sys.exit(1)
+
+    print(f"Success! Audio file saved as: {output_file}")
+
+    if args.play:
+        print("Playing audio...")
+        play_audio(output_file)
+
+if __name__ == '__main__':
+    main()

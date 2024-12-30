@@ -16,6 +16,7 @@ setup(
         "pytest",
         "pytest-asyncio",
         "pytest-mock",
-        "pytest-cov"
+        "pytest-cov",
+        "pyyaml"
     ],
 )

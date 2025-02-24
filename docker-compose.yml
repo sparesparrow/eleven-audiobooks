@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/opt/pysetup
+      - poetry-cache:/root/.cache/pypoetry
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - DEEPL_API_KEY=${DEEPL_API_KEY}
+    depends_on:
+      - mongodb
+    command: poetry run pytest
+
+  mongodb:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    command: mongod --quiet --logpath /dev/null
+
+volumes:
+  poetry-cache:
+  mongodb-data: 

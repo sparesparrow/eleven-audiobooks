@@ -1,0 +1,173 @@
+# Eleven Audiobooks - Implementation Plan
+
+## Critical Bug Fixes
+
+### 1. BatchTextOptimizer Integration ✅
+- **Issue**: `optimize_chapter` method is called in pipeline_manager.py but not implemented in batch_text_optimizer.py
+- **Fix**: 
+  - Implement `optimize_chapter` method in BatchTextOptimizer class that accepts a Path and returns a Path
+  - Make sure it properly handles file IO while delegating to the existing `optimize` method
+
+### 2. Storage Engine URL Generation ✅
+- **Issue**: The `get_audiobook_url` method has incorrect parameter (expects Path instead of file_id string)
+- **Fix**:
+  - Update method signature to accept string ID: `def get_audiobook_url(self, file_id: str) -> Optional[str]:`
+  - Fix implementation to properly generate URLs from file IDs
+
+### 3. PDF Processor Text Cleaning ✅
+- **Issue**: Current text cleaning approach is too aggressive and can corrupt text meaning
+- **Fix**:
+  - Remove the blanket replacement of "1" with "I" and "0" with "O"
+  - Implement smarter OCR correction based on context
+  - Fix chapter detection logic to handle more common formats
+
+### 4. Translation Chunk Recombination ✅
+- **Issue**: The `_combine_chunks` method doesn't correctly preserve chapter boundaries
+- **Fix**:
+  - Implement proper tracking of chapter boundaries during chunk splitting
+  - Update recombination logic to respect original chapter structure
+
+## Implementation Plan by Module
+
+### PDF Processing Module
+- **Requirements**: 
+  - Improve chapter detection with configurable rules
+  - Add page metadata tracking
+  - Better text cleaning
+- **Acceptance Criteria**:
+  - Successfully identifies chapters in 90% of test PDFs
+  - Preserves text formatting and structure
+  - Handles common OCR errors
+  - Provides comprehensive metadata
+- **Tasks**:
+  1. Create a ChapterDetector class with configurable detection rules ✅
+  2. Add page range metadata for each chapter
+  3. Implement smarter OCR correction that preserves numbers ✅
+  4. Add text structure validation
+  5. Add error handling for corrupted PDF files
+
+### Translation Module 
+- **Requirements**:
+  - Refactor to use a service provider interface
+  - Implement context preservation
+  - Add retry mechanism
+- **Acceptance Criteria**:
+  - Successfully translates with context preservation
+  - Gracefully handles API failures
+  - Maintains chapter structure
+  - Supports multiple translation services
+- **Tasks**:
+  1. Create a TranslationService interface
+  2. Implement service-specific adapters (DeepL, NLLB, etc.)
+  3. Add chapter boundary tracking during chunk splitting ✅
+  4. Implement exponential backoff for API retries
+  5. Add context preservation between chunks ✅
+
+### Text Optimization Module
+- **Requirements**:
+  - Fix API to match pipeline manager expectations
+  - Add rate limiting
+  - Improve text splitting
+- **Acceptance Criteria**:
+  - Produces natural-sounding text
+  - Properly handles API limits
+  - Preserves text structure
+  - Successfully processes chapters of any size
+- **Tasks**:
+  1. Implement `optimize_chapter` method to handle file IO ✅
+  2. Add rate limiting and backoff mechanism ✅
+  3. Improve text splitting to preserve paragraphs and sentences ✅
+  4. Add quality validation for optimized text
+  5. Implement optimization history tracking
+
+### Audio Generation Module
+- **Requirements**:
+  - Add chunking for large inputs
+  - Implement audio quality validation
+  - Add metadata embedding
+- **Acceptance Criteria**:
+  - Generates high-quality audio files
+  - Properly handles files of any size
+  - Embeds metadata for chapters
+  - Validates audio quality
+- **Tasks**:
+  1. Implement text chunking for large inputs ✅
+  2. Add audio file concatenation logic ✅
+  3. Implement metadata embedding
+  4. Add audio quality validation
+  5. Implement error handling with retries ✅
+
+### Storage Engine Module
+- **Requirements**:
+  - Fix URL generation
+  - Add data validation
+  - Implement cleanup mechanism
+- **Acceptance Criteria**:
+  - Properly stores and retrieves all artifacts
+  - Generates correct URLs
+  - Provides data versioning
+  - Cleans up failed processes
+- **Tasks**:
+  1. Fix `get_audiobook_url` method to handle both Path and ID inputs ✅
+  2. Add data validation before storage ✅
+  3. Implement versioning for stored artifacts ✅
+  4. Add cleanup mechanism for failed processes ✅
+  5. Implement proper indexing for MongoDB collections ✅
+
+## Implementation Progress
+- Phase 1 (Critical Bug Fixes): ✅ Complete
+- Phase 2 (Module Improvements): 🔄 In Progress
+  - PDF Processing: 40% complete
+  - Translation: 40% complete
+  - Text Optimization: 60% complete
+  - Audio Generation: 60% complete
+  - Storage Engine: 100% complete
+- Phase 3 (Architecture Refactoring): Not Started
+- Phase 4 (Testing and Documentation): Not Started
+
+## Refactoring Plan
+
+### 1. Core Architecture Improvements
+- Extract common functionality into base classes
+- Implement a proper plugin system for translation services
+- Add comprehensive logging
+- Improve error recovery mechanisms
+- Implement parallel processing where possible
+
+### 2. Testing Improvements
+- Fix broken tests
+- Add integration tests for full pipeline
+- Increase test coverage to at least 80%
+- Add performance benchmarks
+
+### 3. Documentation
+- Update code docstrings
+- Create proper API documentation
+- Add troubleshooting guide
+- Document error codes and recovery procedures
+
+## Development Milestones
+
+1. **Phase 1: Critical Bug Fixes** (Priority) ✅
+   - Implement `optimize_chapter` method in BatchTextOptimizer ✅
+   - Fix Storage Engine URL generation ✅
+   - Fix PDF Processor text cleaning ✅
+   - Fix Translation chunk recombination ✅
+
+2. **Phase 2: Module Improvements** 🔄
+   - Refactor PDF Processing module
+   - Enhance Translation module
+   - Improve Text Optimization module
+   - Enhance Audio Generation module
+   - Fix Storage Engine module
+
+3. **Phase 3: Architecture Refactoring**
+   - Extract common functionality
+   - Implement plugin system
+   - Add comprehensive logging
+   - Improve error recovery
+
+4. **Phase 4: Testing and Documentation**
+   - Fix and add tests
+   - Update documentation
+   - Add troubleshooting guides
